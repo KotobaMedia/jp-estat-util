@@ -17,6 +17,10 @@ use tokio::io::AsyncWriteExt as _;
 const DATA_COLUMN_START: usize = 4;
 
 #[derive(Debug, Deserialize, Clone)]
+#[cfg_attr(
+    test,
+    expect(dead_code, reason = "the test harness does not invoke this command")
+)]
 struct MeshStatsConfig {
     mesh_stats: Vec<MeshStats>,
 }

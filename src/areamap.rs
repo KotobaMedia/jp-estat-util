@@ -398,11 +398,13 @@ pub async fn process_areamap(
         stream::iter(shape_url_metas),
         |meta| meta.url.clone(),
         |meta| format!("{}-{}.zip", meta.dlservey.year, meta.pref_code),
-        "shp", // Target extension is .shp
-        tmp_dir,
-        "Downloading Shapes...",
-        "Extracting Shapes...",
-        10, // Concurrency level
+        download::DownloadOptions {
+            target_ext: "shp",
+            tmp_dir,
+            download_message: "Downloading Shapes...",
+            extract_message: "Extracting Shapes...",
+            concurrency: 10,
+        },
     )
     .await
     .with_context(|| "when downloading and extracting shapes".to_string())?;

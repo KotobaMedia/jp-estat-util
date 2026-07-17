@@ -50,6 +50,10 @@ fn normalize_headers(header1: &StringRecord, header2: &StringRecord) -> Vec<Stri
 }
 
 #[derive(Debug, Deserialize, Clone)]
+#[cfg_attr(
+    test,
+    expect(dead_code, reason = "the test harness does not invoke this command")
+)]
 struct MeshStatsConfig {
     mesh_stats: Vec<MeshStats>,
 }
@@ -124,10 +128,10 @@ fn build_available_bands(
     }
 
     let mut bands = Vec::with_capacity(header_codes.len() - DATA_COLUMN_START);
-    for source_idx in DATA_COLUMN_START..header_codes.len() {
+    for (source_idx, name) in normalized_header.iter().enumerate().skip(DATA_COLUMN_START) {
         bands.push(SelectedBand {
             source_idx,
-            name: normalized_header[source_idx].clone(),
+            name: name.clone(),
         });
     }
     Ok(bands)
@@ -502,11 +506,13 @@ pub async fn process_mesh_tile(
         stream::iter(urls_with_metadata),
         |(_mesh, url)| url.clone(),
         |(mesh, _url)| format!("{}-{}-{}.zip", mesh_stats.year, mesh_stats.stats_id, mesh),
-        "txt",
-        tmp_dir,
-        "Downloading Mesh CSVs...",
-        "Extracting Mesh CSVs...",
-        10,
+        download::DownloadOptions {
+            target_ext: "txt",
+            tmp_dir,
+            download_message: "Downloading Mesh CSVs...",
+            extract_message: "Extracting Mesh CSVs...",
+            concurrency: 10,
+        },
     )
     .await?;
 

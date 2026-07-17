@@ -17,6 +17,20 @@ pub struct DownloadedItem<T> {
     // pub archive_path: PathBuf,
 }
 
+/// Configuration for downloading and extracting a collection of archives.
+pub struct DownloadOptions<'a> {
+    /// The file extension to look for within each extracted archive.
+    pub target_ext: &'static str,
+    /// The directory where archives and extracted files will be stored.
+    pub tmp_dir: &'a Path,
+    /// The message displayed on the download progress bar.
+    pub download_message: &'static str,
+    /// The message displayed on the extraction progress bar.
+    pub extract_message: &'static str,
+    /// The maximum number of concurrent downloads and extractions.
+    pub concurrency: usize,
+}
+
 /// Downloads a collection of files, reports progress, extracts them, and returns paths to the extracted files.
 ///
 /// # Arguments
@@ -24,11 +38,7 @@ pub struct DownloadedItem<T> {
 /// * `items` - A stream of metadata items (`T`) to be processed.
 /// * `get_url` - A function that takes a metadata item (`&T`) and returns the `Url` to download.
 /// * `get_filename` - A function that takes a metadata item (`&T`) and returns the desired filename for the download (e.g., "data.zip").
-/// * `target_ext` - The file extension to look for within the extracted archive (e.g., "csv", "shp").
-/// * `tmp_dir` - The directory where downloaded archives and extracted files will be stored.
-/// * `dl_message` - The message to display on the download progress bar.
-/// * `extract_message` - The message to display on the extraction progress bar.
-/// * `concurrency` - The maximum number of concurrent downloads/extractions.
+/// * `options` - Download paths, progress messages, and concurrency settings.
 ///
 /// # Returns
 ///
@@ -37,11 +47,7 @@ pub async fn download_and_extract_all<T, S, FUrl, FFilename>(
     items: S,
     get_url: FUrl,
     get_filename: FFilename,
-    target_ext: &'static str,
-    tmp_dir: &Path,
-    dl_message: &'static str,
-    extract_message: &'static str,
-    concurrency: usize,
+    options: DownloadOptions<'_>,
 ) -> Result<Vec<DownloadedItem<T>>>
 where
     T: Send + Sync + 'static + Clone,
@@ -49,6 +55,14 @@ where
     FUrl: Fn(&T) -> Url + Send + Sync + 'static + Copy,
     FFilename: Fn(&T) -> String + Send + Sync + 'static + Copy,
 {
+    let DownloadOptions {
+        target_ext,
+        tmp_dir,
+        download_message,
+        extract_message,
+        concurrency,
+    } = options;
+
     let client = Client::new();
     let items_vec: Vec<T> = items.collect().await;
     let total_items = items_vec.len() as u64;
@@ -60,7 +74,7 @@ where
 
     let dl_pb = multibar.add(ProgressBar::new(total_items));
     dl_pb.set_style(bar_style.clone());
-    dl_pb.set_message(dl_message);
+    dl_pb.set_message(download_message);
 
     let zip_pb = multibar.add(ProgressBar::new(total_items));
     zip_pb.set_style(bar_style);
@@ -129,7 +143,7 @@ where
         .collect::<Vec<_>>()
         .await;
 
-    dl_pb.finish_with_message(format!("{} completed.", dl_message));
+    dl_pb.finish_with_message(format!("{} completed.", download_message));
     zip_pb.finish_with_message(format!("{} completed.", extract_message));
 
     // Collect results, propagating the first error encountered

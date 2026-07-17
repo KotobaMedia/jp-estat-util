@@ -219,11 +219,13 @@ pub async fn process_mesh(
         stream::iter(urls_with_metadata),
         |(_mesh, url)| url.clone(),
         |(mesh, _url)| format!("{}-{}-{}.zip", mesh_stats.year, mesh_stats.stats_id, mesh),
-        "txt", // e-Stat mesh data uses .txt extension for CSVs inside zip
-        tmp_dir,
-        "Downloading Mesh CSVs...",
-        "Extracting Mesh CSVs...",
-        10, // Concurrency level
+        download::DownloadOptions {
+            target_ext: "txt",
+            tmp_dir,
+            download_message: "Downloading Mesh CSVs...",
+            extract_message: "Extracting Mesh CSVs...",
+            concurrency: 10,
+        },
     )
     .await?;
 
