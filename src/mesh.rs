@@ -265,3 +265,13 @@ pub async fn process_mesh(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::AVAILABLE;
+
+    #[test]
+    fn available_mesh_stats_are_loaded() {
+        assert!(!AVAILABLE.is_empty());
+    }
+}
