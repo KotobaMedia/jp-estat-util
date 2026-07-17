@@ -68,7 +68,10 @@ lazy_static::lazy_static! {
 }
 
 fn get_matching_mesh_stats(level: u8, year: u16, survey: &str) -> Option<&'static MeshStats> {
-    AVAILABLE.iter().find(|&mesh| mesh.meshlevel == level && mesh.year == year && mesh.name == survey).map(|v| v as _)
+    AVAILABLE
+        .iter()
+        .find(|&mesh| mesh.meshlevel == level && mesh.year == year && mesh.name == survey)
+        .map(|v| v as _)
 }
 
 pub async fn process_mesh_csv(
@@ -113,9 +116,10 @@ pub async fn process_mesh_csv(
     downloaded_items.sort_by_key(|item| item.metadata.0);
 
     if let Some(parent) = output.parent()
-        && !parent.as_os_str().is_empty() {
-            tokio::fs::create_dir_all(parent).await?;
-        }
+        && !parent.as_os_str().is_empty()
+    {
+        tokio::fs::create_dir_all(parent).await?;
+    }
 
     let mut writer = WriterBuilder::new().from_path(output)?;
 

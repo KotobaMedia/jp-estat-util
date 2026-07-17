@@ -226,12 +226,13 @@ async fn insert_postgres_metadata(
     km_to_sql::postgres::init_schema(&client).await?;
 
     if let Some(crs) = output_crs
-        && parse_output_srid(crs).is_none() {
-            println!(
-                "Warning: could not infer EPSG SRID from --output-crs='{}'. PostgreSQL metadata will use geometry(polygon) without SRID.",
-                crs
-            );
-        }
+        && parse_output_srid(crs).is_none()
+    {
+        println!(
+            "Warning: could not infer EPSG SRID from --output-crs='{}'. PostgreSQL metadata will use geometry(polygon) without SRID.",
+            crs
+        );
+    }
 
     for servey in target_serveys.iter() {
         let table_name = format!("jp_estat_areamap_{}", servey.year);
@@ -345,9 +346,10 @@ fn parse_output_srid(output_crs: &str) -> Option<i32> {
                 .take_while(|c| c.is_ascii_digit())
                 .collect::<String>();
             if !digits.is_empty()
-                && let Ok(srid) = digits.parse::<i32>() {
-                    return Some(srid);
-                }
+                && let Ok(srid) = digits.parse::<i32>()
+            {
+                return Some(srid);
+            }
         }
     }
 

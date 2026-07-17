@@ -65,7 +65,10 @@ lazy_static::lazy_static! {
 }
 
 fn get_matching_mesh_stats(level: u8, year: u16, survey: &str) -> Option<&'static MeshStats> {
-    AVAILABLE.iter().find(|&mesh| mesh.meshlevel == level && mesh.year == year && mesh.name == survey).map(|v| v as _)
+    AVAILABLE
+        .iter()
+        .find(|&mesh| mesh.meshlevel == level && mesh.year == year && mesh.name == survey)
+        .map(|v| v as _)
 }
 
 fn infer_column_type(col: &str) -> &'static str {
