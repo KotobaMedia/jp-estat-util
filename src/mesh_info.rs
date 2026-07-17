@@ -122,7 +122,7 @@ async fn try_extract_txt(zip_path: &Path) -> Option<PathBuf> {
 }
 
 async fn ensure_sample_csv(tmp_dir: &Path, client: &Client, stats: &MeshStats) -> Result<PathBuf> {
-    for mesh in JAPAN_LV1.iter().copied() {
+    for mesh in JAPAN_LV1 {
         let zip_filename = format!("{}-{}-{}.zip", stats.year, stats.stats_id, mesh);
         let zip_path = tmp_dir.join(zip_filename);
         if !zip_path.exists() {

@@ -84,7 +84,7 @@ fn get_target_serveys(survey_year: Option<u32>) -> Result<Vec<DlServey<'static>>
             available_years
         );
     }
-    Ok(DL_SERVEY_IDS.iter().cloned().collect())
+    Ok(DL_SERVEY_IDS.to_vec())
 }
 
 fn get_all_shape_urls(target_serveys: &[DlServey<'static>]) -> Vec<ShapeUrlMeta> {
@@ -175,7 +175,7 @@ async fn import_shapes(
         let vrt_path = tmp_dir.join(format!("jp_estat_areamap_{}.vrt", servey.year));
         gdal::create_vrt(&vrt_path, &shapes_for_year)
             .await
-            .with_context(|| format!("when creating VRT: {}", &vrt_path.display()))?;
+            .with_context(|| format!("when creating VRT: {}", vrt_path.display()))?;
         gdal::load(
             &vrt_path,
             output,
@@ -185,7 +185,7 @@ async fn import_shapes(
             output_crs,
         )
         .await
-        .with_context(|| format!("when loading VRT: {}", &vrt_path.display()))?;
+        .with_context(|| format!("when loading VRT: {}", vrt_path.display()))?;
         pb.inc(1);
     }
 
@@ -225,14 +225,13 @@ async fn insert_postgres_metadata(
 
     km_to_sql::postgres::init_schema(&client).await?;
 
-    if let Some(crs) = output_crs {
-        if parse_output_srid(crs).is_none() {
+    if let Some(crs) = output_crs
+        && parse_output_srid(crs).is_none() {
             println!(
                 "Warning: could not infer EPSG SRID from --output-crs='{}'. PostgreSQL metadata will use geometry(polygon) without SRID.",
                 crs
             );
         }
-    }
 
     for servey in target_serveys.iter() {
         let table_name = format!("jp_estat_areamap_{}", servey.year);
@@ -345,11 +344,10 @@ fn parse_output_srid(output_crs: &str) -> Option<i32> {
                 .chars()
                 .take_while(|c| c.is_ascii_digit())
                 .collect::<String>();
-            if !digits.is_empty() {
-                if let Ok(srid) = digits.parse::<i32>() {
+            if !digits.is_empty()
+                && let Ok(srid) = digits.parse::<i32>() {
                     return Some(srid);
                 }
-            }
         }
     }
 
@@ -407,7 +405,7 @@ pub async fn process_areamap(
         10, // Concurrency level
     )
     .await
-    .with_context(|| format!("when downloading and extracting shapes"))?;
+    .with_context(|| "when downloading and extracting shapes".to_string())?;
 
     // 3. Import the shapefiles using ogr2ogr
     import_shapes(
@@ -420,7 +418,7 @@ pub async fn process_areamap(
         tmp_dir,
     )
     .await
-    .with_context(|| format!("when importing to ogr2ogr"))?;
+    .with_context(|| "when importing to ogr2ogr".to_string())?;
 
     // 4. For PostgreSQL outputs, insert metadata
     if let Some(postgres_url) = as_postgres_url(output, output_format) {

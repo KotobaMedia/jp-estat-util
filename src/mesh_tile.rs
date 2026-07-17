@@ -109,12 +109,7 @@ lazy_static::lazy_static! {
 }
 
 fn get_matching_mesh_stats(level: u8, year: u16, survey: &str) -> Option<&'static MeshStats> {
-    for mesh in AVAILABLE.iter() {
-        if mesh.meshlevel == level && mesh.year == year && mesh.name == survey {
-            return Some(mesh);
-        }
-    }
-    None
+    AVAILABLE.iter().find(|&mesh| mesh.meshlevel == level && mesh.year == year && mesh.name == survey).map(|v| v as _)
 }
 
 fn build_available_bands(
@@ -372,7 +367,7 @@ fn parse_stat_value(value: &str) -> Result<i32> {
 }
 
 fn build_payload_i32(values: &[i32]) -> Vec<u8> {
-    let mut payload = Vec::with_capacity(values.len() * std::mem::size_of::<i32>());
+    let mut payload = Vec::with_capacity(std::mem::size_of_val(values));
     for value in values {
         payload.extend_from_slice(&value.to_le_bytes());
     }

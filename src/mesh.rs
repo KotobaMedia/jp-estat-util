@@ -65,12 +65,7 @@ lazy_static::lazy_static! {
 }
 
 fn get_matching_mesh_stats(level: u8, year: u16, survey: &str) -> Option<&'static MeshStats> {
-    for mesh in AVAILABLE.iter() {
-        if mesh.meshlevel == level && mesh.year == year && mesh.name == survey {
-            return Some(mesh);
-        }
-    }
-    None
+    AVAILABLE.iter().find(|&mesh| mesh.meshlevel == level && mesh.year == year && mesh.name == survey).map(|v| v as _)
 }
 
 fn infer_column_type(col: &str) -> &'static str {
@@ -125,9 +120,9 @@ async fn create_schema(
         mesh_stats.year, mesh_stats.stats_id, mesh_stats.meshlevel,
     );
     client
-        .execute(&format!("DROP TABLE IF EXISTS {}", &table_name), &[])
+        .execute(&format!("DROP TABLE IF EXISTS {}", table_name), &[])
         .await?;
-    let create_stmt = format!("CREATE TABLE {} ({});", &table_name, column_defs.join(", "));
+    let create_stmt = format!("CREATE TABLE {} ({});", table_name, column_defs.join(", "));
     client.execute(&create_stmt, &[]).await?;
 
     Ok((table_name, columns))
@@ -258,7 +253,7 @@ pub async fn process_mesh(
     for item in downloaded_items.iter() {
         import_csv_to_postgres(&mut client, &item.extracted_path, &table_name, &columns)
             .await
-            .with_context(|| format!("when importing {}", &item.extracted_path.display()))?;
+            .with_context(|| format!("when importing {}", item.extracted_path.display()))?;
         pb.inc(1);
     }
     pb.finish();

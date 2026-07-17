@@ -32,7 +32,7 @@ pub async fn find_file_with_ext(dir: &Path, ext: &str) -> Result<PathBuf> {
     let mut entries = tokio::fs::read_dir(dir).await?;
     while let Some(entry) = entries.next_entry().await? {
         let entry = entry.path();
-        if entry.extension().map_or(false, |e| e == ext) {
+        if entry.extension().is_some_and(|e| e == ext) {
             return Ok(entry);
         }
     }
