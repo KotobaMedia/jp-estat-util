@@ -284,6 +284,27 @@ jp-estat-util mesh \
 
 ---
 
+### 人口メッシュのレベル別 min/max レポート
+
+`misc/population_mesh_minmax.sh` は、`mesh_to_vector.sh` で使う2020年の人口・世帯メッシュについて、全ての数値統計項目の最小値・最大値をメッシュレベルごとにCSV出力します。
+
+- Lv1・Lv2: Lv3データを親メッシュコード単位で合計してから min/max を計算
+- Lv3・Lv4・Lv5: 各レベルの元テーブルから min/max を計算
+- `KEY_CODE`、`HTKSYORI`、`HTKSAKI` などの識別・制御カラムは対象外
+- 統計項目はテーブル定義から自動検出するため、項目名の列挙は不要
+
+```shell
+./misc/population_mesh_minmax.sh \
+  --output ./output/population_mesh_minmax.csv \
+  "host=127.0.0.1 dbname=jp_estat"
+```
+
+`--output` を省略するとCSVを標準出力します。テーブルが `public` 以外にある場合は `--schema <SCHEMA>` を指定してください。
+
+出力カラムは `mesh_level,source_table,aggregation,attribute,min,max` です。
+
+---
+
 ### mesh-info - 利用可能データ一覧の表示
 
 利用可能なメッシュ統計データを表示します。調査名、年度、メッシュレベル、`stats_id` に加えて、各データセットのバンド（統計項目）名も確認できます。
