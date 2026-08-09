@@ -292,6 +292,7 @@ jp-estat-util mesh \
 - Lv3・Lv4・Lv5: 各レベルの元テーブルから min/max を計算
 - `KEY_CODE`、`HTKSYORI`、`HTKSAKI` などの識別・制御カラムは対象外
 - 統計項目はテーブル定義から自動検出するため、項目名の列挙は不要
+- `65～74歳（前期高齢者）` は `６５歳以上人口総数 - ７５歳以上人口総数` として、各メッシュで導出してから min/max を計算
 
 ```shell
 ./misc/population_mesh_minmax.sh \

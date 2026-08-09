@@ -143,9 +143,13 @@ DECLARE
     stat_column record;
     source_relation regclass;
     attribute_count integer;
+    derived_attribute_order smallint;
     value_alias text;
     min_alias text;
     max_alias text;
+    population_65_plus_alias text;
+    population_75_plus_alias text;
+    derived_value_expression text;
     value_expressions text;
     summary_expressions text;
     range_rows text;
@@ -167,6 +171,8 @@ BEGIN
         value_expressions := NULL;
         summary_expressions := NULL;
         range_rows := NULL;
+        population_65_plus_alias := NULL;
+        population_75_plus_alias := NULL;
 
         FOR stat_column IN
             SELECT
@@ -192,6 +198,16 @@ BEGIN
             value_alias := format('value_%s', stat_column.attribute_order);
             min_alias := format('min_%s', stat_column.attribute_order);
             max_alias := format('max_%s', stat_column.attribute_order);
+            derived_attribute_order := stat_column.attribute_order + 1;
+
+            CASE stat_column.attribute_name
+                WHEN '６５歳以上人口総数' THEN
+                    population_65_plus_alias := value_alias;
+                WHEN '７５歳以上人口総数' THEN
+                    population_75_plus_alias := value_alias;
+                ELSE
+                    NULL;
+            END CASE;
 
             IF spec.aggregation = 'sum_by_parent' THEN
                 value_expressions := concat_ws(
@@ -247,6 +263,52 @@ BEGIN
             RAISE EXCEPTION 'no numeric statistical attributes found in %.%',
                 configured_schema, spec.source_table;
         END IF;
+
+        IF population_65_plus_alias IS NULL
+           OR population_75_plus_alias IS NULL THEN
+            RAISE EXCEPTION
+                'required numeric columns for 65–74 population are missing from %.%',
+                configured_schema, spec.source_table;
+        END IF;
+
+        IF spec.aggregation = 'sum_by_parent' THEN
+            derived_value_expression := format(
+                'coalesce(%I, 0) - coalesce(%I, 0)',
+                population_65_plus_alias,
+                population_75_plus_alias
+            );
+        ELSE
+            derived_value_expression := format(
+                'coalesce(%I::numeric, 0) - coalesce(%I::numeric, 0)',
+                '６５歳以上人口総数',
+                '７５歳以上人口総数'
+            );
+        END IF;
+
+        min_alias := 'min_derived_65_74';
+        max_alias := 'max_derived_65_74';
+        summary_expressions := concat_ws(
+            ', ',
+            summary_expressions,
+            format(
+                'min(%s)::numeric AS %I, max(%s)::numeric AS %I',
+                derived_value_expression,
+                min_alias,
+                derived_value_expression,
+                max_alias
+            )
+        );
+        range_rows := concat_ws(
+            ', ',
+            range_rows,
+            format(
+                '(%s, %L, summary.%I, summary.%I)',
+                derived_attribute_order,
+                '65～74歳（前期高齢者）',
+                min_alias,
+                max_alias
+            )
+        );
 
         IF spec.aggregation = 'sum_by_parent' THEN
             EXECUTE format(
